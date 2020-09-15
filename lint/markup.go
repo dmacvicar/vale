@@ -14,6 +14,7 @@ import (
 	"github.com/errata-ai/vale/v2/core"
 	"github.com/gobwas/glob"
 	"github.com/jdkato/regexp"
+	"github.com/niklasfasching/go-org/org"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	grh "github.com/yuin/goldmark/renderer/html"
@@ -150,6 +151,21 @@ func (l Linter) lintMarkdown(f *core.File) error {
 	})
 
 	l.lintHTMLTokens(f, body, buf.Bytes(), 0)
+	return nil
+}
+
+func (l Linter) lintOrg(f *core.File) error {
+	file := filepath.Base(f.Path)
+	doc := org.New().Parse(bytes.NewReader([]byte(f.Content)), file)
+	if doc.Error != nil {
+		return core.NewE100(f.Path, doc.Error)
+	}
+
+	s, err := doc.Write(org.NewHTMLWriter())
+	if err != nil {
+		return core.NewE100(f.Path, err)
+	}
+	l.lintHTMLTokens(f, f.Content, []byte(s), 0)
 	return nil
 }
 
